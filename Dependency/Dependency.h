@@ -14,48 +14,19 @@ class DependencyProperty
 private:
 	const type_info* _Ti;
 	string _PropertyName;
-	size_t _Hash;
 
 	DependencyProperty(const type_info* ti, const string& propertyName) :
 		_Ti(ti),
 		_PropertyName(propertyName)
 	{
-		_Hash = _Ti->hash_code() ^ hash<string>()(_PropertyName);
 	}
-
-public:
-	size_t GetHashCode() const
-	{
-		return _Hash;
-	}
+	DependencyProperty() {}
+	~DependencyProperty() {}
+	DependencyProperty(const DependencyProperty&) {}
+	DependencyProperty& operator=(const DependencyProperty&) {}
 };
 
-static bool operator==(const DependencyProperty& left, const DependencyProperty& right)
-{
-	return left.GetHashCode() == right.GetHashCode();
-}
-static bool operator!=(const DependencyProperty& left, const DependencyProperty& right)
-{
-	return left.GetHashCode() != right.GetHashCode();
-}
-static bool operator<(const DependencyProperty& left, const DependencyProperty& right)
-{
-	return left.GetHashCode() < right.GetHashCode();
-}
-static bool operator>(const DependencyProperty& left, const DependencyProperty& right)
-{
-	return left.GetHashCode() > right.GetHashCode();
-}
-static bool operator<=(const DependencyProperty& left, const DependencyProperty& right)
-{
-	return left.GetHashCode() <= right.GetHashCode();
-}
-static bool operator>=(const DependencyProperty& left, const DependencyProperty& right)
-{
-	return left.GetHashCode() >= right.GetHashCode();
-}
-
-using __DpValTable = map<DependencyProperty, const void*>;
+using __DpValTable = map<const DependencyProperty*, const void*>;
 
 struct __DpMetaData
 {
@@ -67,13 +38,13 @@ class DependencyObject
 {
 public:
 	virtual ~DependencyObject() {}
-	virtual const void* GetValue(const DependencyProperty& dp) = 0;
-	virtual void SetValue(const DependencyProperty& dp, const void* value) = 0;
+	virtual const void* GetValue(const DependencyProperty* const dp) = 0;
+	virtual void SetValue(const DependencyProperty* const dp, const void* value) = 0;
 
 	template<typename T>
-	static DependencyProperty RegisterProperty(const type_info* ti, const string& propertyName, const T& defaultValue)
+	static DependencyProperty* RegisterProperty(const type_info* ti, const string& propertyName, const T& defaultValue)
 	{
-		DependencyProperty dp = DependencyProperty(ti, propertyName);
+		DependencyProperty* dp = new DependencyProperty(ti, propertyName);
 		__RegDefaultValue(ti, dp, new T(defaultValue));
 		return dp;
 	}
@@ -97,7 +68,7 @@ protected:
 		}
 	}
 
-	static void __RegDefaultValue(const type_info* ti, const DependencyProperty& dp, const void* value)
+	static void __RegDefaultValue(const type_info* ti, const DependencyProperty* const dp, const void* value)
 	{
 		__DpMetaData& md = __GetOrRegDpMetaData(ti);
 
@@ -109,10 +80,10 @@ protected:
 		}
 		else
 		{
-			md.DefaultValues.insert(pair<DependencyProperty, const void*>(dp, value));
+			md.DefaultValues.insert(pair<const DependencyProperty*, const void*>(dp, value));
 		}
 	}
-	static const void* __GetDefaultValue(const type_info* ti, const DependencyProperty& dp)
+	static const void* __GetDefaultValue(const type_info* ti, const DependencyProperty* const dp)
 	{
 		__DpMetaData& md = __GetOrRegDpMetaData(ti);
 
@@ -165,7 +136,7 @@ protected:
 		}
 	}
 
-	static const void* __GetObjValue(const type_info* ti, DependencyObject* obj, const DependencyProperty& dp)
+	static const void* __GetObjValue(const type_info* ti, DependencyObject* obj, const DependencyProperty* const dp)
 	{
 		__DpValTable* p = __GetObjValueTable(ti, obj);
 		if (p != nullptr)
@@ -179,7 +150,7 @@ protected:
 
 		return __GetDefaultValue(ti, dp);
 	}
-	static void __SetObjValue(const type_info* ti, DependencyObject* obj, const DependencyProperty& dp, const void* value)
+	static void __SetObjValue(const type_info* ti, DependencyObject* obj, const DependencyProperty* const dp, const void* value)
 	{
 		__DpValTable* p = __GetOrRegObjValueTable(ti, obj);
 		if (p != nullptr)
@@ -192,11 +163,10 @@ protected:
 			}
 			else
 			{
-				p->insert(pair<DependencyProperty, const void*>(dp, value));
+				p->insert(pair<const DependencyProperty*, const void*>(dp, value));
 			}
 		}
 	}
-
 };
 
 map<const type_info*, __DpMetaData*> DependencyObject::__DpMDTables;
@@ -205,13 +175,21 @@ map<const type_info*, __DpMetaData*> DependencyObject::__DpMDTables;
 
 #define DP_OBJ(Class) \
 public: \
-	virtual const void* GetValue(const DependencyProperty& dp) \
+	virtual const void* GetValue(const DependencyProperty* const dp) \
 	{ \
 		return __GetObjValue(&typeid(Class), this, dp); \
 	} \
-	virtual void SetValue(const DependencyProperty& dp, const void* value) \
+	virtual void SetValue(const DependencyProperty* const dp, const void* value) \
 	{ \
 		__SetObjValue(&typeid(Class), this, dp, value); \
+	} \
+	static const void* GetValue(DependencyObject* obj, const DependencyProperty* const dp) \
+	{ \
+		return __GetObjValue(&typeid(Class), obj, dp); \
+	} \
+	static void SetValue(DependencyObject* obj, const DependencyProperty* const dp, const void* value) \
+	{ \
+		__SetObjValue(&typeid(Class), obj, dp, value); \
 	}
 
 #define DP_OBJ_DTOR(Class) \
@@ -226,8 +204,19 @@ void Set##PropertyName(const PropertyType& value) \
 { \
 	SetValue(PropertyName##Property, new PropertyType(value)); \
 } \
-static DependencyProperty PropertyName##Property
+static const DependencyProperty* const PropertyName##Property
+
+#define DP_PROP_DECL_A(Class, PropertyName, PropertyType) \
+static PropertyType& Get##PropertyName(DependencyObject* obj) \
+{ \
+	return *(PropertyType*)GetValue(obj, PropertyName##Property); \
+} \
+static void Set##PropertyName(DependencyObject* obj, const PropertyType& value) \
+{ \
+	SetValue(obj, PropertyName##Property, new PropertyType(value)); \
+} \
+static const DependencyProperty* const PropertyName##Property
 
 #define DP_PROP_INIT(Class, PropertyName, DefaultValue) \
-DependencyProperty Class::PropertyName##Property = \
+const DependencyProperty* const Class::PropertyName##Property = \
 	DependencyObject::RegisterProperty(&typeid(Class), nameof(PropertyName##Property), DefaultValue)

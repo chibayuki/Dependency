@@ -6,50 +6,50 @@
 
 using namespace std;
 
-class Student
+class Human
 {
 private:
-	int _Id;
+	int _Age;
 	string _Name;
 
 public:
-	int GetId() const
+	int GetAge() const
 	{
-		return _Id;
+		return _Age;
 	}
-	void SetId(int id)
+	void SetAge(int value)
 	{
-		_Id = id;
+		_Age = value;
 	}
 
 	string GetName() const
 	{
 		return _Name;
 	}
-	void SetName(string name)
+	void SetName(string value)
 	{
-		_Name = name;
+		_Name = value;
 	}
 };
 
-class StudentDp : public DependencyObject
+class HumanDp : public DependencyObject
 {
-	DP_OBJ(StudentDp)
+	DP_OBJ(HumanDp)
 
 public:
-	virtual ~StudentDp()
+	virtual ~HumanDp()
 	{
-		DP_OBJ_DTOR(StudentDp);
+		DP_OBJ_DTOR(HumanDp);
 	}
 
-	DP_PROP_DECL(StudentDp, Id, int);
-	DP_PROP_DECL(StudentDp, Name, string);
+	DP_PROP_DECL(HumanDp, Age, int);
+	DP_PROP_DECL(HumanDp, Name, string);
 };
 
-DP_PROP_INIT(StudentDp, Id, 0);
-DP_PROP_INIT(StudentDp, Name, string(""));
+DP_PROP_INIT(HumanDp, Age, 0);
+DP_PROP_INIT(HumanDp, Name, string(""));
 
-using DpValPair = pair<DependencyProperty, const void*>;
+using DpValPair = pair<const DependencyProperty*, const void*>;
 
 void SetObjProperties(DependencyObject* obj, const initializer_list<DpValPair>& values)
 {
@@ -62,28 +62,46 @@ void SetObjProperties(DependencyObject* obj, const initializer_list<DpValPair>& 
 	}
 }
 
+class School : public DependencyObject
+{
+	DP_OBJ(School)
+
+public:
+	virtual ~School()
+	{
+		DP_OBJ_DTOR(School);
+	}
+
+	DP_PROP_DECL_A(School, StudentId, int);
+};
+
+DP_PROP_INIT(School, StudentId, 0);
+
 int main()
 {
-	Student s1;
-	s1.SetId(7);
-	s1.SetName("Alice");
-	cout << s1.GetId() << endl;
-	cout << s1.GetName() << endl;
+	Human alice;
+	alice.SetAge(12);
+	alice.SetName("Alice");
+	cout << alice.GetAge() << endl;
+	cout << alice.GetName() << endl;
 
-	StudentDp s2;
-	s2.SetId(42);
-	s2.SetName("Bob");
-	cout << s2.GetId() << endl;
-	cout << s2.GetName() << endl;
+	HumanDp bob;
+	bob.SetAge(14);
+	bob.SetName("Bob");
+	cout << bob.GetAge() << endl;
+	cout << bob.GetName() << endl;
 
-	StudentDp s3;
-	SetObjProperties(&s3,
+	HumanDp cathy;
+	SetObjProperties(&cathy,
 		{
-			DpValPair(StudentDp::IdProperty, new int(1024)),
-			DpValPair(StudentDp::NameProperty, new string("Cathy"))
+			DpValPair(HumanDp::AgeProperty, new int(18)),
+			DpValPair(HumanDp::NameProperty, new string("Cathy"))
 		});
-	cout << s3.GetId() << endl;
-	cout << s3.GetName() << endl;
+	cout << cathy.GetAge() << endl;
+	cout << cathy.GetName() << endl;
+
+	School::SetStudentId(&cathy, 42);
+	cout << School::GetStudentId(&cathy) << endl;
 
 	system("pause");
 }
