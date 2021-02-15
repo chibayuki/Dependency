@@ -34,16 +34,9 @@ public:
 
 class HumanDp : public DependencyObject
 {
-	DP_OBJ(HumanDp)
-
 public:
-	virtual ~HumanDp()
-	{
-		DP_OBJ_DTOR(HumanDp);
-	}
-
-	DP_PROP_DECL(HumanDp, Age, int);
-	DP_PROP_DECL(HumanDp, Name, string);
+	DP_PROP_DECL(Age, int);
+	DP_PROP_DECL(Name, string);
 };
 
 DP_PROP_INIT(HumanDp, Age, 0);
@@ -64,15 +57,8 @@ void SetObjProperties(DependencyObject* obj, const initializer_list<DpValPair>& 
 
 class School : public DependencyObject
 {
-	DP_OBJ(School)
-
 public:
-	virtual ~School()
-	{
-		DP_OBJ_DTOR(School);
-	}
-
-	DP_PROP_DECL_A(School, StudentId, int);
+	DP_PROP_DECL_A(StudentId, int);
 };
 
 DP_PROP_INIT(School, StudentId, 0);
