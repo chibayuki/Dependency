@@ -1,3 +1,12 @@
+﻿/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+Copyright © 2021 chibayuki@foxmail.com
+
+Dependency.Dependency
+Version 21.2.17.0000
+
+This file is part of Dependency
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 #pragma once
 
 #include <string>
