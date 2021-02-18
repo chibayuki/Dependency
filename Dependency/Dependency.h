@@ -29,10 +29,12 @@ private:
 	string _PropertyName;
 
 	DependencyProperty(const type_info* ti, const string& propertyName) : _Ti(ti), _PropertyName(propertyName) {}
-	DependencyProperty() {}
-	~DependencyProperty() {}
-	DependencyProperty(const DependencyProperty&) {}
-	DependencyProperty& operator=(const DependencyProperty&) {}
+	DependencyProperty() = delete;
+	~DependencyProperty() = default;
+	DependencyProperty(const DependencyProperty&) = delete;
+	DependencyProperty(DependencyProperty&&) = delete;
+	DependencyProperty& operator=(const DependencyProperty&) = delete;
+	DependencyProperty& operator=(DependencyProperty&&) = delete;
 
 	static __DpValTable __DefaultValues;
 
@@ -49,7 +51,7 @@ private:
 
 public:
 	template<typename T>
-	static DependencyProperty* RegisterProperty(const type_info* ti, const string& propertyName, const T& defaultValue)
+	static DependencyProperty* Register(const type_info* ti, const string& propertyName, const T& defaultValue)
 	{
 		DependencyProperty* dp = new DependencyProperty(ti, propertyName);
 		__DefaultValues.insert(__DpValPair(dp, new T(defaultValue)));
@@ -58,12 +60,6 @@ public:
 };
 
 __DpValTable DependencyProperty::__DefaultValues;
-
-struct __DpMetaData
-{
-	__DpValTable DefaultValues;
-	map<DependencyObject*, __DpValTable*> ObjValues;
-};
 
 class DependencyObject
 {
@@ -144,4 +140,4 @@ static const DependencyProperty* const PropertyName##Property
 
 #define DP_PROP_INIT(Class, PropertyName, DefaultValue) \
 const DependencyProperty* const Class::PropertyName##Property = \
-	DependencyProperty::RegisterProperty(&typeid(Class), nameof(PropertyName##Property), DefaultValue)
+	DependencyProperty::Register(&typeid(Class), nameof(PropertyName##Property), DefaultValue)

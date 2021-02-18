@@ -22,7 +22,7 @@ private:
 	string _Name;
 
 public:
-	Human() :_Age(0), _Name("") {}
+	Human() : _Age(0), _Name("") {}
 
 	int GetAge() const
 	{
