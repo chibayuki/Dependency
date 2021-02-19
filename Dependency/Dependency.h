@@ -2,7 +2,7 @@
 Copyright © 2021 chibayuki@foxmail.com
 
 Dependency.Dependency
-Version 21.2.17.0000
+Version 21.2.19.0000
 
 This file is part of Dependency
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -41,6 +41,7 @@ private:
 	static const void* __GetDefaultValue(const DependencyProperty* const dp)
 	{
 		auto it = __DefaultValues.find(dp);
+
 		if (it != __DefaultValues.end())
 		{
 			return it->second;
@@ -50,11 +51,10 @@ private:
 	}
 
 public:
-	template<typename T>
-	static DependencyProperty* Register(const type_info* ti, const string& propertyName, const T& defaultValue)
+	static DependencyProperty* Register(const type_info* ti, const string& propertyName, const void* defaultValue)
 	{
 		DependencyProperty* dp = new DependencyProperty(ti, propertyName);
-		__DefaultValues.insert(__DpValPair(dp, new T(defaultValue)));
+		__DefaultValues.insert(__DpValPair(dp, defaultValue));
 		return dp;
 	}
 };
@@ -64,43 +64,64 @@ __DpValTable DependencyProperty::__DefaultValues;
 class DependencyObject
 {
 private:
-	__DpValTable __ObjValues;
+	__DpValTable* __ObjValues;
 
 public:
+	DependencyObject() : __ObjValues(nullptr) {}
 	virtual ~DependencyObject()
 	{
-		for (auto& val : __ObjValues)
+		if (__ObjValues != nullptr)
 		{
-			if (val.second != nullptr)
+			for (auto& val : *__ObjValues)
 			{
-				delete val.second;
+				if (val.second != nullptr)
+				{
+					delete val.second;
+				}
 			}
-		}
 
-		__ObjValues.clear();
+			delete __ObjValues;
+		}
 	}
 
 	const void* GetValue(const DependencyProperty* const dp) const
 	{
-		auto it = __ObjValues.find(dp);
-		if (it != __ObjValues.end())
+		if (__ObjValues != nullptr)
 		{
-			return it->second;
+			auto it = __ObjValues->find(dp);
+
+			if (it != __ObjValues->end())
+			{
+				return it->second;
+			}
 		}
 
 		return DependencyProperty::__GetDefaultValue(dp);
 	}
 	void SetValue(const DependencyProperty* const dp, const void* value)
 	{
-		auto it = __ObjValues.find(dp);
-		if (it != __ObjValues.end())
+		if (__ObjValues == nullptr)
 		{
-			delete it->second;
-			it->second = value;
+			__ObjValues = new __DpValTable();
+			__ObjValues->insert(__DpValPair(dp, value));
 		}
 		else
 		{
-			__ObjValues.insert(__DpValPair(dp, value));
+			auto it = __ObjValues->find(dp);
+
+			if (it != __ObjValues->end())
+			{
+				if (it->second != nullptr)
+				{
+					delete it->second;
+				}
+
+				it->second = value;
+			}
+			else
+			{
+				__ObjValues->insert(__DpValPair(dp, value));
+			}
 		}
 	}
 
@@ -123,7 +144,8 @@ void Set##PropertyName(const PropertyType& value) \
 { \
 	SetValue(PropertyName##Property, new PropertyType(value)); \
 } \
-static const DependencyProperty* const PropertyName##Property
+static const DependencyProperty* const PropertyName##Property; \
+using PropertyName##Property##_t = PropertyType
 
 #define DP_PROP_DECL_A(PropertyName, PropertyType) \
 static PropertyType Get##PropertyName(DependencyObject* obj) \
@@ -134,10 +156,9 @@ static void Set##PropertyName(DependencyObject* obj, const PropertyType& value) 
 { \
 	SetValue(obj, PropertyName##Property, new PropertyType(value)); \
 } \
-static const DependencyProperty* const PropertyName##Property
-
-#define nameof(obj) #obj
+static const DependencyProperty* const PropertyName##Property; \
+using PropertyName##Property##_t = PropertyType
 
 #define DP_PROP_INIT(Class, PropertyName, DefaultValue) \
 const DependencyProperty* const Class::PropertyName##Property = \
-	DependencyProperty::Register(&typeid(Class), nameof(PropertyName##Property), DefaultValue)
+	DependencyProperty::Register(&typeid(Class), #PropertyName, new Class::PropertyName##Property##_t(DefaultValue))

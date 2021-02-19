@@ -1,8 +1,8 @@
 ﻿/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
 Copyright © 2021 chibayuki@foxmail.com
 
-Dependency.Dependency
-Version 21.2.17.0000
+Dependency.Demo
+Version 21.2.19.0000
 
 This file is part of Dependency
 * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -51,7 +51,7 @@ public:
 };
 
 DP_PROP_INIT(HumanDp, Age, 0); // 为 AgeProperty 属性设定初值
-DP_PROP_INIT(HumanDp, Name, string("")); // 为 NameProperty 属性设定初值
+DP_PROP_INIT(HumanDp, Name, ""); // 为 NameProperty 属性设定初值
 
 // 示例 1 展示依赖对象、依赖属性的定义与使用
 void Demo1()
